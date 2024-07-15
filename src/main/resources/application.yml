@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: identity
+  datasource:
+    url: jdbc:mysql://localhost:7000/identity
+    username: khanhln
+    password: kh@nl316Zk12345
+#    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+#    database-platform: org.hibernate.MySQL8Dialect
+server:
+  port: 7777
+  servlet:
+    context-path: /api/v1
