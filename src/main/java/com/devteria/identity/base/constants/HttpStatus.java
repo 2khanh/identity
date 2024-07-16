@@ -13,6 +13,9 @@ public enum HttpStatus {
     SUCCEED_LOGIN(20000, "Authenticated. Login Successfully!"),
     FAILED_LOGIN(40000, "Not Authenticated. Login Failed!"),
     WRONG_PASSWORD(40000, "Please check again. Password is incorrect!"),
+    VALID_TOKEN(20000, "Token is valid!"),
+    INVALID_TOKEN(40000, "Token is invalid!"),
+    EXPIRED_TOKEN(40000, "Token is expired. Please login again to refresh token!"),
 
     // Others
     OUT_OF_EXCEPTION(49999, "Out of Exception Definition!"),

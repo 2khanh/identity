@@ -2,21 +2,27 @@ package com.devteria.identity.service;
 
 import com.devteria.identity.base.constants.HttpStatus;
 import com.devteria.identity.dto.request.AuthenticationRequest;
+import com.devteria.identity.dto.request.TokenVerifyRequest;
 import com.devteria.identity.dto.response.AuthenticationResponse;
+import com.devteria.identity.dto.response.TokenVerifyResponse;
 import com.devteria.identity.entity.User;
 import com.devteria.identity.exception.UserRuntimeException;
 import com.devteria.identity.repository.IUserRepository;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -30,7 +36,8 @@ public class AuthenticationService {
     IUserRepository userRepo;
 
     @NonFinal
-    static String JWT_SECRET_KEY = "eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoiQWRtaW4iLCJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkphdmFJblVzZSIsImV4cCI6MTcyMTA1OTgwMywiaWF0IjoxNzIxMDU5ODAzfQ.cxg8_KRqikaYs_xx9KYsSe4F69DNaVIHOqo8Zc7JDcI";
+    @Value("${jwt.secret-key}")
+    String JWT_SECRET_KEY;
 
     public AuthenticationResponse doAuthentication(AuthenticationRequest request) {
         User user = userRepo.findByUsername(request.getUsername());
@@ -80,6 +87,33 @@ public class AuthenticationService {
         } catch (RuntimeException | JOSEException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public TokenVerifyResponse verifyToken(
+            TokenVerifyRequest request
+    ) throws JOSEException, ParseException
+    {
+        String token = request.getToken();
+
+        JWSVerifier verifier = new MACVerifier(JWT_SECRET_KEY.getBytes());
+        SignedJWT signedJWT = SignedJWT.parse(token);
+        Date expirationTime = signedJWT.getJWTClaimsSet().getExpirationTime();
+
+        boolean isTokenVerify = signedJWT.verify(verifier);
+        boolean isTokenInUse = expirationTime.after(new Date());
+
+        if (!isTokenVerify) {
+            throw new UserRuntimeException(HttpStatus.INVALID_TOKEN);
+        }
+        if (!isTokenInUse) {
+            throw new UserRuntimeException(HttpStatus.EXPIRED_TOKEN);
+        }
+
+        return new TokenVerifyResponse(
+                true,
+                new Date(Instant.now().toEpochMilli())
+        );
+
     }
 
 }
